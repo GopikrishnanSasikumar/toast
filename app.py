@@ -8,7 +8,8 @@ from utils import get_faces
 from db.operations import (
     create_embeddings_table, 
     insert_embedding, 
-    find_most_similar_embedding
+    find_most_similar_embedding,
+    delete_user
 )
 
 app = FastAPI()
@@ -65,5 +66,5 @@ async def create_user(image: bytes = File(...), user_id: str = Body(...)):
 
 @app.delete("/user/{user_id}", response_model=UserResponse)
 async def delete_user(user_id: str):
-    # Your code to delete the user profile and associated image embedding(s)
+    delete_user(user_id)
     return {"user_id": user_id}

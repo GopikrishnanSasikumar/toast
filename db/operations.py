@@ -21,3 +21,9 @@ def find_most_similar_embedding(embedding):
     )
     session.close()
     return result[0] if result else None
+
+def delete_user(user_id):
+    session = Session()
+    session.query(Embedding).filter(Embedding.user_id == user_id).delete()
+    session.commit()
+    session.close()
