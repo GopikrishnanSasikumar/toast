@@ -1,0 +1,5 @@
+export POSTGRES_HOST="your_postgres_host"
+export POSTGRES_PORT="your_postgres_port"
+export POSTGRES_DB="your_postgres_db"
+export POSTGRES_USER="your_postgres_user"
+export POSTGRES_PASSWORD="your_postgres_password"
