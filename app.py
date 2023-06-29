@@ -1,12 +1,15 @@
 from typing import List
-
-import numpy as np
 import torch
 from fastapi import FastAPI, File, Body
 from facenet_pytorch import MTCNN, InceptionResnetV1
 from pydantic import BaseModel
-
 from utils import get_faces
+
+from db.operations import (
+    create_embeddings_table, 
+    insert_embedding, 
+    find_most_similar_embedding
+)
 
 app = FastAPI()
 
@@ -14,10 +17,8 @@ app = FastAPI()
 mtcnn = MTCNN()
 resnet = InceptionResnetV1(pretrained='vggface2').eval()
 
-# Initialize a global variable to store the image embeddings
-image_embeddings = []
-user_ids = []
 
+create_embeddings_table()
 
 class UserResponse(BaseModel):
     user_id: str
@@ -28,7 +29,7 @@ async def image_to_user(image: bytes = File(...)):
     # Extract faces from the image
     faces = get_faces(image)
 
-    ids = []
+    user_ids = []
 
     for face in faces:
         # Convert the face data from a numpy array to a PyTorch tensor
@@ -37,17 +38,9 @@ async def image_to_user(image: bytes = File(...)):
         # Compute the embedding for the face using the InceptionResnetV1 model
         embedding = resnet(face_tensor.unsqueeze(0)).detach().numpy().reshape(-1)
 
-        # Compute cosine similarity between the face embedding and the stored embeddings
-        similarities = np.dot(image_embeddings, embedding.T) / (
-                    np.linalg.norm(image_embeddings, axis=1) * np.linalg.norm(embedding))
+        most_similar_id = find_most_similar_embedding(embedding)
 
-        # Find the index of the most similar face
-        most_similar_index = np.argmax(similarities)
-
-        # Your code to get the user id associated with the most similar face
-        user_id = user_ids[most_similar_index]
-
-        ids.append({"user_id": user_id})
+        user_ids.append(UserResponse(user_id=most_similar_id))
 
     return user_ids
 
@@ -64,10 +57,7 @@ async def create_user(image: bytes = File(...), user_id: str = Body(...)):
         # Compute the embedding for the face using the InceptionResnetV1 model
         embedding = resnet(face_tensor.unsqueeze(0)).detach().squeeze().numpy()
 
-        # Store the image embedding in the global variable
-        global image_embeddings, user_ids
-        image_embeddings.append(embedding)
-        user_ids.append(user_id)
+        insert_embedding(embedding, user_id)
 
     # Your code to create the user profile
     return {"user_id": user_id}
